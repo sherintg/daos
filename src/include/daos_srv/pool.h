@@ -21,6 +21,7 @@
 #include <daos_srv/vos_types.h>
 #include <daos_pool.h>
 #include <daos_security.h>
+#include <daos/policy.h>
 
 /** Metrics for each individual active pool */
 struct ds_pool_metrics {
@@ -76,6 +77,7 @@ struct ds_pool {
 	uint32_t		sp_map_version;	/* temporary */
 	uint32_t		sp_ec_cell_sz;
 	uint64_t		sp_reclaim;
+	struct policy_desc_t	sp_policy_desc;	/* pool tiering policy descriptor */
 	crt_group_t	       *sp_group;
 	ABT_mutex		sp_mutex;
 	ABT_cond		sp_fetch_hdls_cond;

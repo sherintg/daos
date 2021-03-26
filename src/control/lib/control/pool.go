@@ -30,6 +30,11 @@ const (
 	PoolCreateTimeout = 10 * time.Minute // be generous for large pools
 )
 
+var PolicyMap = map[string]drpc.PoolPolicy{
+	"io_size":           drpc.PoolPolicyIoSize,
+	"write_intensivity": drpc.PoolPolicyWriteIntensivity,
+}
+
 type (
 	// Pool contains a unified representation of a DAOS Storage Pool.
 	Pool struct {
@@ -114,6 +119,11 @@ func genPoolCreateRequest(in *PoolCreateReq) (out *mgmtpb.PoolCreateReq, err err
 
 	out.Uuid = uuid.New().String()
 
+	out.Policy, out.PolicyParams, err = ParsePolicy(in.PolicyString, in.PolicyArgs)
+	if err != nil {
+		return nil, err
+	}
+
 	return
 }
 
@@ -133,18 +143,22 @@ type (
 		ScmRatio   float64
 		NumRanks   uint32
 		// manual params
-		Ranks     []system.Rank
-		ScmBytes  uint64
-		NvmeBytes uint64
+		Ranks        []system.Rank
+		ScmBytes     uint64
+		NvmeBytes    uint64
+		PolicyString string
+		PolicyArgs   []string
 	}
 
 	// PoolCreateResp contains the response from a pool create request.
 	PoolCreateResp struct {
-		UUID      string   `json:"uuid"`
-		SvcReps   []uint32 `json:"svc_reps"`
-		TgtRanks  []uint32 `json:"tgt_ranks"`
-		ScmBytes  uint64   `json:"scm_bytes"`
-		NvmeBytes uint64   `json:"nvme_bytes"`
+		UUID         string   `json:"uuid"`
+		SvcReps      []uint32 `json:"svc_reps"`
+		TgtRanks     []uint32 `json:"tgt_ranks"`
+		ScmBytes     uint64   `json:"scm_bytes"`
+		NvmeBytes    uint64   `json:"nvme_bytes"`
+		Policy       uint32   `json:"policy"`
+		PolicyParams []uint32 `json:"policyparams"`
 	}
 )
 
@@ -198,6 +212,7 @@ func PoolCreate(ctx context.Context, rpcClient UnaryInvoker, req *PoolCreateReq)
 
 	pcr := new(PoolCreateResp)
 	pcr.UUID = pbReq.Uuid
+	pcr.Policy = pbReq.Policy
 	return pcr, convert.Types(pbPcr, pcr)
 }
 
@@ -716,4 +731,28 @@ func PoolReintegrate(ctx context.Context, rpcClient UnaryInvoker, req *PoolReint
 	rpcClient.Debugf("Reintegrate DAOS pool target response: %s\n", msResp)
 
 	return nil
+}
+
+// ParsePolicy will parse the incoming policy name string and return
+// a policy index used in the DAOS engine.
+// It will also parse all provided parameters and pass them to the engine
+// Returns an error if string cannot be found in the map
+func ParsePolicy(stringPolicy string, stringArgs []string) (policy uint32, parameters []uint32, err error) {
+
+	var p, found = PolicyMap[stringPolicy]
+
+	var params []uint32
+	for _, val := range stringArgs {
+		var x, err = strconv.ParseUint(val, 10, 32)
+		if err != nil {
+			return 0, nil, errors.New("Incorrect policy parameters.")
+		}
+		params = append(params, uint32(x))
+	}
+
+	if !found {
+		return 0, nil, errors.New("Policy " + stringPolicy + " does not exist.")
+	}
+
+	return uint32(p), params, nil
 }
