@@ -155,6 +155,7 @@ Pool created with 6.00%%%% SCM/NVMe ratio
   Total Size    : 42 GB                               
   SCM           : 2.4 GB (600 MB / rank)              
   NVMe          : 40 GB (10 GB / rank)                
+  Policy        : io_size (index 0)                   
 
 `, common.MockUUID()),
 		},
@@ -174,6 +175,7 @@ Pool created with 100.00%%%% SCM/NVMe ratio
   Total Size    : 2.4 GB                              
   SCM           : 2.4 GB (600 MB / rank)              
   NVMe          : 0 B (0 B / rank)                    
+  Policy        : io_size (index 0)                   
 
 `, common.MockUUID()),
 		},
