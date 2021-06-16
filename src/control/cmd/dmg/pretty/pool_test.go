@@ -145,6 +145,7 @@ func TestPretty_PrintPoolCreateResp(t *testing.T) {
 				TgtRanks:  mockRanks(0, 1, 2, 3),
 				ScmBytes:  600 * humanize.MByte,
 				NvmeBytes: 10 * humanize.GByte,
+				Policy:    "type=io_size",
 			},
 			expPrintStr: fmt.Sprintf(`
 Pool created with 6.00%%%% SCM/NVMe ratio
@@ -155,7 +156,7 @@ Pool created with 6.00%%%% SCM/NVMe ratio
   Total Size    : 42 GB                               
   SCM           : 2.4 GB (600 MB / rank)              
   NVMe          : 40 GB (10 GB / rank)                
-  Policy        : io_size (index 0)                   
+  Policy        : type=io_size                        
 
 `, common.MockUUID()),
 		},
@@ -165,6 +166,7 @@ Pool created with 6.00%%%% SCM/NVMe ratio
 				SvcReps:  mockRanks(0, 1, 2),
 				TgtRanks: mockRanks(0, 1, 2, 3),
 				ScmBytes: 600 * humanize.MByte,
+				Policy:   "type=io_size",
 			},
 			expPrintStr: fmt.Sprintf(`
 Pool created with 100.00%%%% SCM/NVMe ratio
@@ -175,7 +177,7 @@ Pool created with 100.00%%%% SCM/NVMe ratio
   Total Size    : 2.4 GB                              
   SCM           : 2.4 GB (600 MB / rank)              
   NVMe          : 0 B (0 B / rank)                    
-  Policy        : io_size (index 0)                   
+  Policy        : type=io_size                        
 
 `, common.MockUUID()),
 		},

@@ -1189,7 +1189,7 @@ void   mgmt__pool_set_prop_resp__free_unpacked
   assert(message->base.descriptor == &mgmt__pool_set_prop_resp__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor mgmt__pool_create_req__field_descriptors[16] =
+static const ProtobufCFieldDescriptor mgmt__pool_create_req__field_descriptors[15] =
 {
   {
     "uuid",
@@ -1363,24 +1363,12 @@ static const ProtobufCFieldDescriptor mgmt__pool_create_req__field_descriptors[1
     "policy",
     15,
     PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_UINT32,
+    PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
     offsetof(Mgmt__PoolCreateReq, policy),
     NULL,
-    NULL,
+    &protobuf_c_empty_string,
     0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "policyParams",
-    16,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_UINT32,
-    offsetof(Mgmt__PoolCreateReq, n_policyparams),
-    offsetof(Mgmt__PoolCreateReq, policyparams),
-    NULL,
-    NULL,
-    0 | PROTOBUF_C_FIELD_FLAG_PACKED,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
@@ -1392,7 +1380,6 @@ static const unsigned mgmt__pool_create_req__field_indices_by_name[] = {
   7,   /* field[7] = numsvcreps */
   13,   /* field[13] = nvmebytes */
   14,   /* field[14] = policy */
-  15,   /* field[15] = policyParams */
   11,   /* field[11] = ranks */
   12,   /* field[12] = scmbytes */
   9,   /* field[9] = scmratio */
@@ -1405,7 +1392,7 @@ static const unsigned mgmt__pool_create_req__field_indices_by_name[] = {
 static const ProtobufCIntRange mgmt__pool_create_req__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 16 }
+  { 0, 15 }
 };
 const ProtobufCMessageDescriptor mgmt__pool_create_req__descriptor =
 {
@@ -1415,7 +1402,7 @@ const ProtobufCMessageDescriptor mgmt__pool_create_req__descriptor =
   "Mgmt__PoolCreateReq",
   "mgmt",
   sizeof(Mgmt__PoolCreateReq),
-  16,
+  15,
   mgmt__pool_create_req__field_descriptors,
   mgmt__pool_create_req__field_indices_by_name,
   1,  mgmt__pool_create_req__number_ranges,
