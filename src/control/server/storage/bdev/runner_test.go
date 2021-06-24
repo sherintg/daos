@@ -37,6 +37,7 @@ func TestRunner_Prepare(t *testing.T) {
 		"prepare reset fails": {
 			req: PrepareRequest{
 				TargetUser: username,
+				DisableVMD: true,
 			},
 			mbc: &MockBackendConfig{
 				PrepareResetErr: errors.New("reset failed"),
@@ -46,6 +47,7 @@ func TestRunner_Prepare(t *testing.T) {
 		"prepare fails": {
 			req: PrepareRequest{
 				TargetUser: username,
+				DisableVMD: true,
 			},
 			mbc: &MockBackendConfig{
 				PrepareErr: errors.New("prepare failed"),
@@ -55,6 +57,7 @@ func TestRunner_Prepare(t *testing.T) {
 		"defaults": {
 			req: PrepareRequest{
 				TargetUser: username,
+				DisableVMD: true,
 			},
 			expEnv: []string{
 				fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
@@ -69,6 +72,7 @@ func TestRunner_Prepare(t *testing.T) {
 				TargetUser:            username,
 				PCIAllowlist:          testPciAllowlist,
 				DisableVFIO:           true,
+				DisableVMD:            true,
 			},
 			expEnv: []string{
 				fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
@@ -85,6 +89,7 @@ func TestRunner_Prepare(t *testing.T) {
 				TargetUser:            username,
 				PCIBlocklist:          testPciBlocklist,
 				DisableVFIO:           true,
+				DisableVMD:            true,
 			},
 			expEnv: []string{
 				fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
@@ -102,6 +107,7 @@ func TestRunner_Prepare(t *testing.T) {
 				PCIBlocklist:          testPciBlocklist,
 				PCIAllowlist:          testPciAllowlist,
 				DisableVFIO:           true,
+				DisableVMD:            true,
 			},
 			expErr: errors.New(
 				"bdev_include and bdev_exclude can not be used together"),
@@ -111,6 +117,7 @@ func TestRunner_Prepare(t *testing.T) {
 				DisableCleanHugePages: true,
 				TargetUser:            nonexistentTargetUser,
 				DisableVFIO:           true,
+				DisableVMD:            true,
 			},
 			expErr: errors.New(
 				"lookup on local host: user: unknown user nonexistentTargetUser"),

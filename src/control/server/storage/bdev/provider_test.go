@@ -91,24 +91,32 @@ func TestProvider_forwardScan(t *testing.T) {
 		expErr       error
 	}{
 		"scan error": {
-			scanReq: ScanRequest{},
+			scanReq: ScanRequest{
+				DisableVMD: true,
+			},
 			scanErr: errors.New("fail"),
 			expErr:  errors.New("fail"),
 		},
 		"nil scan response": {
-			scanReq:  ScanRequest{},
+			scanReq: ScanRequest{
+				DisableVMD: true,
+			},
 			scanResp: nil,
 			expErr:   errors.New("unexpected nil response from bdev backend"),
 		},
 		"nil devices": {
-			scanReq:      ScanRequest{},
+			scanReq: ScanRequest{
+				DisableVMD: true,
+			},
 			scanResp:     new(ScanResponse),
 			shouldUpdate: true,
 			expMsg:       "bdev scan: update cache (0 devices)",
 			expResp:      new(ScanResponse),
 		},
 		"no devices": {
-			scanReq: ScanRequest{},
+			scanReq: ScanRequest{
+				DisableVMD: true,
+			},
 			scanResp: &ScanResponse{
 				Controllers: storage.NvmeControllers{},
 			},
@@ -119,7 +127,9 @@ func TestProvider_forwardScan(t *testing.T) {
 			},
 		},
 		"update cache": {
-			scanReq: ScanRequest{},
+			scanReq: ScanRequest{
+				DisableVMD: true,
+			},
 			scanResp: &ScanResponse{
 				Controllers: storage.MockNvmeControllers(3),
 			},
@@ -130,8 +140,10 @@ func TestProvider_forwardScan(t *testing.T) {
 			},
 		},
 		"update empty cache": {
-			scanReq: ScanRequest{},
-			cache:   &ScanResponse{},
+			scanReq: ScanRequest{
+				DisableVMD: true,
+			},
+			cache: &ScanResponse{},
 			scanResp: &ScanResponse{
 				Controllers: storage.MockNvmeControllers(3),
 			},
@@ -142,7 +154,9 @@ func TestProvider_forwardScan(t *testing.T) {
 			},
 		},
 		"reuse cache": {
-			scanReq: ScanRequest{},
+			scanReq: ScanRequest{
+				DisableVMD: true,
+			},
 			cache: &ScanResponse{
 				Controllers: storage.MockNvmeControllers(2),
 			},
@@ -155,7 +169,10 @@ func TestProvider_forwardScan(t *testing.T) {
 			},
 		},
 		"bypass cache": {
-			scanReq: ScanRequest{NoCache: true},
+			scanReq: ScanRequest{
+				NoCache:    true,
+				DisableVMD: true,
+			},
 			cache: &ScanResponse{
 				Controllers: storage.MockNvmeControllers(2),
 			},
@@ -169,6 +186,7 @@ func TestProvider_forwardScan(t *testing.T) {
 		},
 		"filtered devices": {
 			scanReq: ScanRequest{
+				DisableVMD: true,
 				DeviceList: []string{
 					storage.MockNvmeController(0).PciAddr,
 					storage.MockNvmeController(1).PciAddr,
@@ -223,12 +241,16 @@ func TestProvider_Scan(t *testing.T) {
 		expVMDDisabled bool
 	}{
 		"no devices": {
-			req:            ScanRequest{},
+			req: ScanRequest{
+				DisableVMD: true,
+			},
 			expRes:         &ScanResponse{},
 			expVMDDisabled: true, // disabled in mock by default
 		},
 		"single device": {
-			req: ScanRequest{},
+			req: ScanRequest{
+				DisableVMD: true,
+			},
 			mbc: &MockBackendConfig{
 				ScanRes: &ScanResponse{
 					Controllers: storage.NvmeControllers{ctrlr1},
@@ -240,7 +262,9 @@ func TestProvider_Scan(t *testing.T) {
 			},
 		},
 		"multiple devices": {
-			req: ScanRequest{},
+			req: ScanRequest{
+				DisableVMD: true,
+			},
 			mbc: &MockBackendConfig{
 				ScanRes: &ScanResponse{
 					Controllers: storage.NvmeControllers{
@@ -255,8 +279,10 @@ func TestProvider_Scan(t *testing.T) {
 			},
 			expVMDDisabled: true,
 		},
-		"multiple devices with vmd disabled": {
-			req:       ScanRequest{DisableVMD: true},
+		"multiple devices with vmd enabled": {
+			req: ScanRequest{
+				DisableVMD: false,
+			},
 			forwarded: true,
 			mbc: &MockBackendConfig{
 				ScanRes: &ScanResponse{
@@ -273,7 +299,9 @@ func TestProvider_Scan(t *testing.T) {
 			expVMDDisabled: true,
 		},
 		"failure": {
-			req: ScanRequest{},
+			req: ScanRequest{
+				DisableVMD: true,
+			},
 			mbc: &MockBackendConfig{
 				ScanErr: errors.New("scan failed"),
 			},
@@ -312,7 +340,9 @@ func TestProvider_Prepare(t *testing.T) {
 		expErr        error
 	}{
 		"reset fails": {
-			req: PrepareRequest{},
+			req: PrepareRequest{
+				DisableVMD: true,
+			},
 			mbc: &MockBackendConfig{
 				PrepareResetErr: errors.New("reset failed"),
 			},
@@ -320,7 +350,8 @@ func TestProvider_Prepare(t *testing.T) {
 		},
 		"reset-only": {
 			req: PrepareRequest{
-				ResetOnly: true,
+				ResetOnly:  true,
+				DisableVMD: true,
 			},
 			mbc: &MockBackendConfig{
 				PrepareErr: errors.New("should not get this far"),
@@ -328,14 +359,18 @@ func TestProvider_Prepare(t *testing.T) {
 			expRes: &PrepareResponse{},
 		},
 		"prepare fails": {
-			req: PrepareRequest{},
+			req: PrepareRequest{
+				DisableVMD: true,
+			},
 			mbc: &MockBackendConfig{
 				PrepareErr: errors.New("prepare failed"),
 			},
 			expErr: errors.New("prepare failed"),
 		},
 		"prepare succeeds": {
-			req:    PrepareRequest{},
+			req: PrepareRequest{
+				DisableVMD: true,
+			},
 			expRes: &PrepareResponse{},
 		},
 	} {
@@ -371,6 +406,7 @@ func TestProvider_Format(t *testing.T) {
 			req: FormatRequest{
 				Class:      storage.BdevClassNvme,
 				DeviceList: []string{mockSingle.PciAddr},
+				DisableVMD: true,
 			},
 			mbc: &MockBackendConfig{
 				FormatRes: &FormatResponse{
@@ -395,6 +431,7 @@ func TestProvider_Format(t *testing.T) {
 			req: FormatRequest{
 				Class:      storage.BdevClassNvme,
 				DeviceList: []string{mockSingle.PciAddr},
+				DisableVMD: true,
 			},
 			mbc: &MockBackendConfig{
 				FormatRes: &FormatResponse{
