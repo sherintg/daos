@@ -21,7 +21,7 @@
 #include <daos_srv/vos_types.h>
 #include <daos_pool.h>
 #include <daos_security.h>
-#include <daos/policy.h>
+#include <daos_srv/policy.h>
 
 /** Metrics for each individual active pool */
 struct ds_pool_metrics {
