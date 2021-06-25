@@ -651,6 +651,9 @@ func resolvePoolPropVal(req *mgmtpb.PoolSetPropReq) (*mgmtpb.PoolSetPropReq, err
 		default:
 			return nil, errors.Errorf("unhandled self_heal type %q", healType)
 		}
+	case "policy":
+		newReq.SetPropertyNumber(drpc.PoolPropertyPolicy)
+		newReq.SetValueString(req.GetStrval())
 	default:
 		return nil, errors.Errorf("unhandled pool property %q", propName)
 	}
