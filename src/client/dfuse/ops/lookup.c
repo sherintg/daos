@@ -22,6 +22,9 @@ dfuse_reply_entry(struct dfuse_projection_info *fs_handle,
 	d_list_t		*rlink;
 	int			rc;
 
+	ino_t wipe_parent = 0;
+	char wipe_name[NAME_MAX + 1];
+
 	D_ASSERT(ie->ie_parent);
 	D_ASSERT(ie->ie_dfs);
 
@@ -98,16 +101,25 @@ dfuse_reply_entry(struct dfuse_projection_info *fs_handle,
 		if (ie->ie_stat.st_ino == ie->ie_dfs->dfs_ino) {
 			DFUSE_TRA_DEBUG(inode, "Not updating parent");
 		} else {
-			rc = dfs_update_parent(inode->ie_obj, ie->ie_obj,
-					       ie->ie_name);
-			if (rc != 0)
-				DFUSE_TRA_ERROR(inode,
-						"dfs_update_parent() failed %d",
-						rc);
-		}
-		inode->ie_parent = ie->ie_parent;
-		strncpy(inode->ie_name, ie->ie_name, NAME_MAX + 1);
+			if ((inode->ie_parent != ie->ie_parent) ||
+				(strncmp(inode->ie_name, ie->ie_name, NAME_MAX + 1) != 0)) {
+				DFUSE_TRA_DEBUG(inode, "File has moved from '%s to '%s'",
+						inode->ie_name, ie->ie_name);
 
+				rc = dfs_update_parent(inode->ie_obj, ie->ie_obj, ie->ie_name);
+				if (rc != 0)
+					DFUSE_TRA_ERROR(inode,
+							"dfs_update_parent() failed %d",
+							rc);
+
+				/* Save the old name so that we can delete it in a minute */
+				wipe_parent = inode->ie_parent;
+				strncpy(wipe_name, inode->ie_name, NAME_MAX + 1);
+
+				inode->ie_parent = ie->ie_parent;
+				strncpy(inode->ie_name, ie->ie_name, NAME_MAX + 1);
+			}
+		}
 		atomic_fetch_sub_relaxed(&ie->ie_ref, 1);
 		dfuse_ie_close(fs_handle, ie);
 		ie = inode;
@@ -117,6 +129,15 @@ dfuse_reply_entry(struct dfuse_projection_info *fs_handle,
 		DFUSE_REPLY_CREATE(ie, req, entry, fi_out);
 	else
 		DFUSE_REPLY_ENTRY(ie, req, entry);
+
+	if (wipe_parent == 0)
+		return;
+
+	rc = fuse_lowlevel_notify_inval_entry(fs_handle->dpi_info->di_session, wipe_parent,
+					wipe_name, strnlen(wipe_name, NAME_MAX));
+	if (rc)
+		DFUSE_TRA_ERROR(ie, "inval_entry returned %d: %s", rc, strerror(-rc));
+
 	return;
 out_err:
 	DFUSE_REPLY_ERR_RAW(fs_handle, req, rc);
