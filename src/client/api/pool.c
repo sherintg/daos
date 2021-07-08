@@ -11,14 +11,17 @@
 #include "client_internal.h"
 #include "task_internal.h"
 
+#undef daos_pool_connect
+
+/** Kept for backward ABI compatibility, but not advertised via header file */
 int
-daos_pool_connect(const uuid_t uuid, const char *grp,
-		  unsigned int flags,
+daos_pool_connect(const char *pool, const char *grp, unsigned int flags,
 		  daos_handle_t *poh, daos_pool_info_t *info, daos_event_t *ev)
 {
 	daos_pool_connect_t	*args;
 	tse_task_t		*task;
-	int			 rc;
+	const unsigned char	*uuid = (const unsigned char *) pool;
+	int			rc;
 
 	DAOS_API_ARG_ASSERT(*args, POOL_CONNECT);
 	if (!daos_uuid_valid(uuid))
@@ -29,46 +32,62 @@ daos_pool_connect(const uuid_t uuid, const char *grp,
 		return rc;
 
 	args = dc_task_get_args(task);
-	args->grp		= grp;
-	args->flags		= flags;
-	args->poh		= poh;
-	args->info		= info;
+	args->grp	= grp;
+	args->flags	= flags;
+	args->poh	= poh;
+	args->info	= info;
 	uuid_copy((unsigned char *)args->uuid, uuid);
-	args->label		= NULL;
+	args->label             = NULL;
 
 	return dc_task_schedule(task, true);
 }
 
+/**
+ * Real latest & greatest implementation of pool connect.
+ * Used by anyone including the daos_pool.h header file.
+ */
 int
-daos_pool_connect_by_label(const char *label, const char *grp,
-			   unsigned int flags, daos_handle_t *poh,
-			   daos_pool_info_t *info, daos_event_t *ev)
+daos_pool_connect2(const char *pool, const char *sys, unsigned int flags,
+		   daos_handle_t *poh, daos_pool_info_t *info, daos_event_t *ev)
 {
 	daos_pool_connect_t	*args;
 	tse_task_t		*task;
-	size_t			 label_len = 0;
+	uuid_t			 uuid;
 	int			 rc;
 
 	DAOS_API_ARG_ASSERT(*args, POOL_CONNECT);
-	if (label)
-		label_len = strnlen(label, DAOS_PROP_LABEL_MAX_LEN+1);
-	if (!label || (label_len == 0) ||
-	    (label_len > DAOS_PROP_LABEL_MAX_LEN)) {
-		D_ERROR("invalid label parameter\n");
+
+	/**
+	 * check whether it is a valid label first since this is assumed to be
+	 * the new norm
+	 */
+	if (daos_label_is_valid(pool)) {
+		/** that's a label */
+		rc = dc_task_create(dc_pool_connect_lbl, NULL, ev, &task);
+		if (rc)
+			return rc;
+		args = dc_task_get_args(task);
+		uuid_clear(args->uuid);
+		args->label = pool;
+	} else if (uuid_parse(pool, uuid) == 0) {
+		/** successfully parsed as a uuid */
+		rc = dc_task_create(dc_pool_connect, NULL, ev, &task);
+		if (rc)
+			return rc;
+		args = dc_task_get_args(task);
+		uuid_copy((unsigned char *)args->uuid, uuid);
+		args->label = NULL;
+
+	} else {
+		/** neither a label nor a uuid ... try again*/
+		D_ERROR("invalid pool parameter\n");
 		return -DER_INVAL;
 	}
 
-	rc = dc_task_create(dc_pool_connect_lbl, NULL, ev, &task);
-	if (rc)
-		return rc;
-
-	args = dc_task_get_args(task);
-	args->grp		= grp;
-	args->flags		= flags;
-	args->poh		= poh;
-	args->info		= info;
-	uuid_clear(args->uuid);
-	args->label		= label;
+	args->grp	= sys;
+	args->flags	= flags;
+	args->poh	= poh;
+	args->info	= info;
 
 	return dc_task_schedule(task, true);
 }
